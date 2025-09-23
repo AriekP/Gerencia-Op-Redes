@@ -1,0 +1,28 @@
+{
+  "name": "v0-vue-3-inventory-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "kill-dev": "powershell -ExecutionPolicy Bypass -File ./kill-dev.ps1",
+    "kill-dev-server": "powershell -ExecutionPolicy Bypass -File ./server/kill-dev.ps1",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext .js,.ts,.vue"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.18.2",
+    "lucide-vue-next": "^0.255.0",
+    "node-fetch": "^2.7.0",
+    "vue": "^3.3.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.1",
+    "eslint": "^8.0.0",
+    "eslint-plugin-vue": "^9.0.0",
+    "vite": "^7.1.6"
+  }
+}

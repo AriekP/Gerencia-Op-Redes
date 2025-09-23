@@ -1,0 +1,60 @@
+/* Estilos base simples (sin Tailwind) */
+html, body, #app {
+  height: 100%;
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  background-color: #D9CBC2; /* Cambiado a beige grisáceo */
+}
+
+/* Aplicar la paleta de colores a la aplicación */
+.bg-primary {
+  background-color: #3C5170; /* Azul oscuro */
+}
+
+.bg-secondary {
+  background-color: #809BC7; /* Azul medio */
+}
+
+.bg-accent {
+  background-color: #A6514A; /* Rojo terracota */
+}
+
+.bg-light {
+  background-color: #E3C288; /* Beige claro */
+}
+
+.bg-neutral {
+  background-color: #D9CBC2; /* Beige grisáceo */
+}
+
+.text-primary {
+  color: #3C5170;
+}
+
+.text-secondary {
+  color: #809BC7;
+}
+
+.text-accent {
+  color: #A6514A;
+}
+
+.text-light {
+  color: #E3C288;
+}
+
+.text-neutral {
+  color: #D9CBC2;
+}
+
+.border-primary {
+  border-color: #3C5170;
+}
+
+.border-secondary {
+  border-color: #809BC7;
+}
+
+.border-accent {
+  border-color: #A6514A;
+}
