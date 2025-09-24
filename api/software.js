@@ -9,23 +9,39 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization')
   if (req.method === 'OPTIONS') return res.status(200).end()
 
-  // Helpers
+  // helpers
   const toSnake = (s) => s.replace(/([A-Z])/g, '_$1').toLowerCase()
-  const normalize = (obj) => {
+  const normalizeKeys = (obj) => {
     const out = {}
     Object.entries(obj || {}).forEach(([k, v]) => {
       let nk = k
       if (k === 'serial') nk = 'serial_number'
       else nk = toSnake(k)
-      out[nk] = v
+      // convierte "" a null para columnas date/number/text que no aceptan vacío
+      const vv = (v === '') ? null : v
+      out[nk] = vv
     })
+    return out
+  }
+
+  // convierte strings numéricas a number y deja null cuando toca
+  const coerceTypes = (obj) => {
+    const numericFields = new Set(['total_length_m', 'used_length_m'])
+    const out = { ...obj }
+    for (const k of Object.keys(out)) {
+      if (out[k] === '') out[k] = null
+      if (out[k] != null && numericFields.has(k)) {
+        const n = Number(out[k])
+        out[k] = Number.isFinite(n) ? n : null
+      }
+    }
     return out
   }
 
   if (req.method === 'GET') {
     try {
       const { data, error } = await supabase
-        .from('software_inventory') // <-- tu tabla
+        .from('software_inventory')
         .select('*')
         .order('created_at', { ascending: false })
 
@@ -38,54 +54,31 @@ module.exports = async (req, res) => {
 
   if (req.method === 'POST') {
     try {
-      // body
       let payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
       if (!payload || typeof payload !== 'object') payload = {}
 
-      // normaliza claves camelCase -> snake_case (y serial -> serial_number)
-      payload = normalize(payload)
+      // normaliza y sanea
+      payload = normalizeKeys(payload)
 
-      // permite TODOS los campos que usa tu Inventario + genéricos
-      const allowedColumns = [
-        // genéricos “software”
-        'name', 'version', 'serial_number', 'responsible', 'status',
-        'expiry_date', 'warranty_expiration', 'notes', 'responsible_user_id',
-        // Inventario de red
-        'device_type', 'manufacturer', 'model', 'location',
+      // campos que existen en tu tabla
+      const allowed = [
+        'device_type', 'manufacturer', 'model', 'serial_number',
+        'location', 'status',
         'purchase_date', 'warranty_end_date',
         'last_checked_by', 'last_checked_at',
         'total_length_m', 'used_length_m',
-        'observations', 'created_at'
+        'observations', 'responsible', 'responsible_user_id',
+        // si tu tabla tiene estas, déjalas; si no, no importan porque están filtradas
+        'version', 'expiry_date', 'warranty_expiration', 'notes', 'created_at'
       ]
-      payload = Object.fromEntries(
-        Object.entries(payload).filter(([k]) => allowedColumns.includes(k))
-      )
+      payload = Object.fromEntries(Object.entries(payload).filter(([k]) => allowed.includes(k)))
 
-      // fallback: si no hay name pero sí model, usamos model como name
-      if (!payload.name && payload.model) {
-        payload.name = payload.model
-      }
+      // coerciones simples ("" -> null, números)
+      payload = coerceTypes(payload)
 
-      // validación mínima
-      if (!payload.name || !payload.serial_number) {
-        return res.status(400).json({ error: 'name y serial_number son obligatorios' })
-      }
-
-      // NOTA: NO convertir status a español; el inventario usa:
-      // active | maintenance | inactive | retired
-
-      // unicidad por nombre (si la quieres mantener)
-      const { data: existing, error: checkErr } = await supabase
-        .from('software_inventory')
-        .select('id, name')
-        .eq('name', payload.name)
-        .maybeSingle()
-      if (checkErr) return res.status(500).json({ error: 'Error verificando nombre de software' })
-      if (existing) {
-        return res.status(409).json({
-          error: `Ya existe un software con el nombre "${payload.name}". Los nombres de software deben ser únicos.`,
-          type: 'duplicate_name'
-        })
+      // validación mínima acorde al formulario
+      if (!payload.model || !payload.serial_number) {
+        return res.status(400).json({ error: 'model y serial_number son obligatorios' })
       }
 
       // inserta
@@ -96,25 +89,19 @@ module.exports = async (req, res) => {
         .single()
 
       if (error) {
-        const msg = (error.message || String(error)).toLowerCase()
-        if (msg.includes('duplicate key') && msg.includes('name')) {
-          return res.status(409).json({
-            error: 'Ya existe un software con este nombre. Los nombres de software deben ser únicos.',
-            type: 'duplicate_name'
-          })
-        }
+        // refleja el error real para depurar (p.ej. violación de unique en serial_number)
         return res.status(500).json({ error: error.message || String(error) })
       }
 
       return res.status(201).json({ data })
     } catch (err) {
-      return res.status(500).json({ error: 'Error interno del servidor' })
+      return res.status(500).json({ error: err.message || 'Error interno del servidor' })
     }
   }
 
   if (req.method === 'DELETE') {
     try {
-      // Extraer id de la URL (cuando llamas a /api/software/:id)
+      // id de /api/software/:id
       const urlParts = req.url.split('?')[0].split('/')
       const softwareId = urlParts[urlParts.length - 1]
       if (!softwareId || softwareId === 'software') {
@@ -129,7 +116,7 @@ module.exports = async (req, res) => {
       if (error) return res.status(500).json({ error: error.message || String(error) })
       return res.status(200).json({ success: true, message: 'Software eliminado correctamente' })
     } catch (err) {
-      return res.status(500).json({ error: 'Error interno del servidor' })
+      return res.status(500).json({ error: err.message || 'Error interno del servidor' })
     }
   }
 
