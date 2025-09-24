@@ -211,6 +211,7 @@
   </div>
 </template>
 
+
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { RefreshCw, Plus, Package, AlertTriangle, Users, FileText, CheckCircle, Clock } from 'lucide-vue-next'
@@ -222,36 +223,43 @@ const softwareData = ref([])
 const usersData = ref([])
 const refreshInterval = ref(null)
 
-// API configuration
-const API_BASE = 'http://localhost:3000'
+// --- Helper API (rutas relativas, sin localhost) ---
+async function apiGet(path, init) {
+  const url = path.startsWith('/') ? path : `/${path}`
+  const res = await fetch(url, { ...init, method: 'GET', cache: 'no-store' })
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+  // tolera respuestas texto/JSON
+  const text = await res.text()
+  try { return JSON.parse(text) } catch { return text }
+}
 
 // Computed properties for stats
 const totalSoftware = computed(() => softwareData.value.length)
 
-const activeSoftware = computed(() => 
+const activeSoftware = computed(() =>
   softwareData.value.filter(s => s.status === 'active').length
 )
 
-const expiredSoftware = computed(() => 
+const expiredSoftware = computed(() =>
   softwareData.value.filter(s => s.status === 'expired').length
 )
 
-const expiringSoftware = computed(() => 
+const expiringSoftware = computed(() =>
   softwareData.value.filter(s => s.status === 'expiring').length
 )
 
 const totalUsers = computed(() => usersData.value.length)
 
 // Computed properties for chart percentages
-const activePercentage = computed(() => 
+const activePercentage = computed(() =>
   totalSoftware.value > 0 ? (activeSoftware.value / totalSoftware.value) * 100 : 0
 )
 
-const expiredPercentage = computed(() => 
+const expiredPercentage = computed(() =>
   totalSoftware.value > 0 ? (expiredSoftware.value / totalSoftware.value) * 100 : 0
 )
 
-const expiringPercentage = computed(() => 
+const expiringPercentage = computed(() =>
   totalSoftware.value > 0 ? (expiringSoftware.value / totalSoftware.value) * 100 : 0
 )
 
@@ -294,16 +302,14 @@ const statsData = computed(() => [
 // Department statistics
 const departmentStats = computed(() => {
   const deptCounts = {}
-  
   softwareData.value.forEach(software => {
     const dept = software.department || 'Sin asignar'
     deptCounts[dept] = (deptCounts[dept] || 0) + 1
   })
-  
   return Object.entries(deptCounts)
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count)
-    .slice(0, 6) // Top 6 departments
+    .slice(0, 6)
 })
 
 // Recent software (last 5 added)
@@ -322,17 +328,13 @@ const formatDate = (dateString) => {
       month: 'short',
       day: 'numeric'
     })
-  } catch (error) {
+  } catch {
     return 'Fecha inválida'
   }
 }
 
 const getStatusText = (status) => {
-  const texts = {
-    active: 'Activo',
-    expired: 'Vencido',
-    expiring: 'Por vencer'
-  }
+  const texts = { active: 'Activo', expired: 'Vencido', expiring: 'Por vencer' }
   return texts[status] || 'Desconocido'
 }
 
@@ -345,49 +347,33 @@ const getStatusBadge = (status) => {
   return classes[status] || 'px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full'
 }
 
-// API functions
+// API functions (con rutas relativas)
 const loadSoftware = async () => {
   try {
-    const res = await fetch(`${API_BASE}/api/software`, { cache: 'no-store' })
-    
-    let json = null
-    try {
-      const text = await res.text()
-      json = JSON.parse(text)
-    } catch (e) {
-      console.error('Error parsing software JSON:', e)
-      return
+    const json = await apiGet('/api/software')
+    const backendToStatus = {
+      activo: 'active',
+      expirado: 'expired',
+      en_revision: 'expiring',
+      inactivo: 'inactive'
     }
-    
-    if (res.ok) {
-      const backendToStatus = {
-        activo: 'active',
-        expirado: 'expired',
-        en_revision: 'expiring',
-        inactivo: 'inactive'
-      }
-      
-      const rows = (Array.isArray(json) ? json : json.data || []).map(item => ({
-        ...item,
-        id: item.id,
-        name: item.name || '',
-        serial: item.serial || item.serial_number || '',
-        responsible: item.responsible || '',
-        responsibleUserId: item.responsible_user_id || item.responsibleUserId || '',
-        status: backendToStatus[item.status] || item.status || 'active',
-        expiryDate: item.expiryDate || item.expiry_date || '',
-        warrantyExpiration: item.warranty_expiration || '',
-        notes: item.notes || '',
-        createdAt: item.created_at || item.createdAt || '',
-        department: item.department || '',
-        vendor: item.vendor || '',
-        licenseType: item.license_type || ''
-      }))
-      
-      softwareData.value = rows
-    } else {
-      console.error('Error loading software:', json.error)
-    }
+    const rows = (Array.isArray(json) ? json : json?.data || []).map(item => ({
+      ...item,
+      id: item.id,
+      name: item.name || '',
+      serial: item.serial || item.serial_number || '',
+      responsible: item.responsible || '',
+      responsibleUserId: item.responsible_user_id || item.responsibleUserId || '',
+      status: backendToStatus[item.status] || item.status || 'active',
+      expiryDate: item.expiryDate || item.expiry_date || '',
+      warrantyExpiration: item.warranty_expiration || '',
+      notes: item.notes || '',
+      createdAt: item.created_at || item.createdAt || '',
+      department: item.department || '',
+      vendor: item.vendor || '',
+      licenseType: item.license_type || ''
+    }))
+    softwareData.value = rows
   } catch (err) {
     console.error('Error fetch /api/software', err)
   }
@@ -395,18 +381,12 @@ const loadSoftware = async () => {
 
 const loadUsers = async () => {
   try {
-    const res = await fetch(`${API_BASE}/api/users`, { cache: 'no-store' })
-    const json = await res.json()
-    
-    if (res.ok) {
-      usersData.value = (json.data || []).map(u => ({ 
-        id: u.id, 
-        name: u.name || u.email,
-        email: u.email
-      }))
-    } else {
-      console.warn('Could not load users for dashboard stats')
-    }
+    const json = await apiGet('/api/users')
+    usersData.value = (json?.data || []).map(u => ({
+      id: u.id,
+      name: u.name || u.email,
+      email: u.email
+    }))
   } catch (e) {
     console.warn('Error fetching users for dashboard', e)
   }
@@ -426,10 +406,8 @@ const refreshData = async () => {
 
 // Auto-refresh functionality
 const startAutoRefresh = () => {
-  // Refresh every 5 minutes
   refreshInterval.value = setInterval(refreshData, 5 * 60 * 1000)
 }
-
 const stopAutoRefresh = () => {
   if (refreshInterval.value) {
     clearInterval(refreshInterval.value)
@@ -442,8 +420,5 @@ onMounted(async () => {
   await refreshData()
   startAutoRefresh()
 })
-
-onUnmounted(() => {
-  stopAutoRefresh()
-})
+onUnmounted(() => { stopAutoRefresh() })
 </script>
