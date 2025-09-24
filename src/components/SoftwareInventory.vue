@@ -13,7 +13,7 @@
         Agregar Dispositivo
       </button>
     </div>
-    
+
     <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
       <div class="flex flex-col lg:flex-row lg:items-center gap-4">
         <div class="flex-1">
@@ -75,7 +75,7 @@
         </div>
       </div>
     </div>
-    
+
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
@@ -185,13 +185,13 @@
         </table>
       </div>
     </div>
-    
+
     <div v-if="showAddModal || showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div class="bg-white rounded-lg max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">
           {{ showAddModal ? 'Agregar Dispositivo de Red' : 'Editar Dispositivo de Red' }}
         </h3>
-        
+
         <form @submit.prevent="saveDevice" class="space-y-4 text-sm">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="space-y-3">
@@ -209,17 +209,17 @@
                   <option value="server">Servidor</option>
                 </select>
               </div>
-              
+
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Fabricante *</label>
                 <input v-model="currentDevice.manufacturer" type="text" required class="w-full px-2 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
               </div>
-              
+
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Modelo *</label>
                 <input v-model="currentDevice.model" type="text" required class="w-full px-2 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
               </div>
-              
+
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Número de Serie *</label>
                 <input v-model="currentDevice.serial_number" type="text" required class="w-full px-2 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
@@ -331,12 +331,12 @@ const currentDevice = ref({
 
 const networkDevices = ref([])
 
-const API_BASE = 'http://localhost:3000'
+// Helper para asegurar rutas relativas absolutas
+const api = (p) => (p.startsWith('/') ? p : `/${p}`)
 
 const loadDevices = async () => {
   try {
-    const res = await fetch(`${API_BASE}/api/software`, { cache: 'no-store' })
-    
+    const res = await fetch(api('/api/software'), { cache: 'no-store' })
     let json = null
     try {
       const text = await res.text()
@@ -345,7 +345,7 @@ const loadDevices = async () => {
       console.error('Error al parsear JSON:', e)
       return
     }
-    
+
     if (res.ok) {
       const rows = (Array.isArray(json) ? json : json.data || []).map(item => ({
         id: item.id,
@@ -367,7 +367,7 @@ const loadDevices = async () => {
       }))
       networkDevices.value = rows
     } else {
-      console.error('Error cargando dispositivos:', json.error)
+      console.error('Error cargando dispositivos:', json?.error)
       showError('Error al cargar datos', 'No se pudieron cargar los datos del inventario de red')
     }
   } catch (err) {
@@ -485,7 +485,7 @@ const resetFilters = () => {
 }
 
 const viewDevice = (item) => {
-  // Navigate to detail view
+  // Aquí podrías navegar a un detalle si lo necesitas
   console.log('View device:', item)
 }
 
@@ -513,9 +513,9 @@ const editDevice = (item) => {
 const deleteDevice = async (item) => {
   if (!confirm(`¿Estás seguro de que quieres eliminar "${item.model}"?`)) return
   try {
-    const res = await fetch(`${API_BASE}/api/software/${item.id}`, { method: 'DELETE', cache: 'no-store' })
+    const res = await fetch(api(`/api/software/${item.id}`), { method: 'DELETE', cache: 'no-store' })
     const json = await res.json()
-    
+
     if (!res.ok) {
       console.error('Error deleting', json)
       if (res.status === 404) {
@@ -525,7 +525,7 @@ const deleteDevice = async (item) => {
       }
       return
     }
-    
+
     showSuccess('Dispositivo eliminado', `"${item.model}" ha sido eliminado exitosamente`)
     await loadDevices()
   } catch (err) {
@@ -544,12 +544,12 @@ const saveDevice = async () => {
 
     // Validar número de serie único (solo en modo crear)
     if (showAddModal.value) {
-      const existingSerial = networkDevices.value.find(d => 
+      const existingSerial = networkDevices.value.find(d =>
         d.serial_number.toLowerCase() === currentDevice.value.serial_number.toLowerCase()
       )
       if (existingSerial) {
         showError(
-          'Número de serie duplicado', 
+          'Número de serie duplicado',
           `Ya existe un dispositivo con el número de serie "${currentDevice.value.serial_number}". Los números de serie deben ser únicos.`
         )
         return
@@ -575,17 +575,16 @@ const saveDevice = async () => {
         total_length_m: currentDevice.value.total_length_m ? parseFloat(currentDevice.value.total_length_m) : null,
         used_length_m: currentDevice.value.used_length_m ? parseFloat(currentDevice.value.used_length_m) : null
       }
-      
-      const res = await fetch(`${API_BASE}/api/software`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(payload),
-          cache: 'no-store'
-        })
+
+      const res = await fetch(api('/api/software'), {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+        cache: 'no-store'
+      })
       const json = await res.json()
       if (!res.ok) {
         console.error('Error creating', json)
-        
         if (json.type === 'duplicate_serial_number') {
           showError('Número de serie duplicado', json.error)
         } else if (res.status === 400) {
@@ -595,7 +594,7 @@ const saveDevice = async () => {
         }
         return
       }
-      
+
       showSuccess('Dispositivo creado', 'El dispositivo se ha creado exitosamente')
     } else {
       const payload = {
@@ -614,8 +613,8 @@ const saveDevice = async () => {
         total_length_m: currentDevice.value.total_length_m ? parseFloat(currentDevice.value.total_length_m) : null,
         used_length_m: currentDevice.value.used_length_m ? parseFloat(currentDevice.value.used_length_m) : null
       }
-      
-      const res = await fetch(`${API_BASE}/api/software/${currentDevice.value.id}`, {
+
+      const res = await fetch(api(`/api/software/${currentDevice.value.id}`), {
         method: 'PUT',
         headers,
         body: JSON.stringify(payload),
@@ -624,7 +623,6 @@ const saveDevice = async () => {
       const json = await res.json()
       if (!res.ok) {
         console.error('Error updating', json)
-        
         if (json.type === 'duplicate_serial_number') {
           showError('Número de serie duplicado', json.error)
         } else if (res.status === 400) {
@@ -634,7 +632,7 @@ const saveDevice = async () => {
         }
         return
       }
-      
+
       showSuccess('Dispositivo actualizado', 'Los datos se han actualizado exitosamente')
     }
 
