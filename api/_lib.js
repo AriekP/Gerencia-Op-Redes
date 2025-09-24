@@ -1,16 +1,15 @@
-const { supabase } = require('./_lib')
+// api/_lib.js
+const { createClient } = require('@supabase/supabase-js')
 
-module.exports = async (_req, res) => {
-  try {
-    // Ajusta nombre de tabla/columnas si fuera distinto o devuelve [] temporalmente
-    const { data, error } = await supabase
-      .from('users')
-      .select('id,name,email')
-      .order('created_at', { ascending: false })
-
-    if (error) return res.status(500).json({ error: error.message })
-    return res.status(200).json({ data })
-  } catch (e) {
-    return res.status(500).json({ error: e.message })
-  }
+// Verifica variables (se verá en logs si faltan)
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+  console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_KEY')
 }
+
+// Cliente ADMIN (service role) — solo en servidor
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+)
+
+module.exports = { supabase }
