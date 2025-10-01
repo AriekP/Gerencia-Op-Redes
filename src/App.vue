@@ -37,7 +37,7 @@
 
           <!-- ===== Botón IDEF0 al lado de “Inventario” ===== -->
           <a
-            href="/idef0.html"
+            href="http://m4celch.neocities.org"
             target="_blank"
             class="inline-flex items-center px-4 py-2 rounded-lg bg-accent text-neutral font-semibold hover:opacity-90 transition"
           >
