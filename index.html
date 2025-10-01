@@ -12,4 +12,14 @@
     <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
   </body>
+  <script>
+  try {
+    if (window.self !== window.top) {
+      document.documentElement.classList.add('in-iframe');
+    }
+  } catch {
+    document.documentElement.classList.add('in-iframe');
+  }
+</script>
+
 </html>

@@ -1,22 +1,27 @@
 <template>
-  <div id="app" class="min-h-screen bg-neutral flex flex-col">
-    <!-- Encabezado con más altura -->
+  <div id="app" class="iframe-frame min-h-screen bg-neutral flex flex-col">
     <header class="bg-primary shadow-sm border-b border-secondary">
+      <!-- Título superior -->
       <div class="px-6 py-6 flex items-center justify-between">
         <h1 class="text-2xl font-semibold text-light">{{ currentViewTitle }}</h1>
-        <div class="flex items-center space-x-4">
-          <!-- Contenido adicional si es necesario -->
-        </div>
+        <div class="flex items-center space-x-4"></div>
       </div>
 
-      <!-- NavBar reubicado debajo del header -->
+      <!-- ===== Banner centrado con fondo ===== -->
+      <div class="hero-banner">
+        <h2 class="hero-title">Departamento de Redes</h2>
+      </div>
+      <!-- ===================================== -->
+
+      <!-- NavBar -->
       <nav class="bg-primary border-t border-secondary">
-        <div class="px-6 flex justify-center space-x-4">
+        <div class="px-6 flex items-center justify-center space-x-3 py-2">
+          <!-- Botones existentes -->
           <button
             v-for="item in navigation"
             :key="item.name"
             @click="currentView = item.view"
-            :class="[ 
+            :class="[
               'flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors',
               currentView === item.view
                 ? 'bg-secondary text-light border-b-2 border-accent'
@@ -26,11 +31,22 @@
             <component :is="item.icon" class="mr-2 h-5 w-5" />
             {{ item.name }}
           </button>
+
+          <!-- Separador opcional -->
+          <span class="nav-divider hidden sm:inline-block"></span>
+
+          <!-- ===== Botón IDEF0 al lado de “Inventario” ===== -->
+          <a
+            href="/idef0.html"
+            target="_blank"
+            class="inline-flex items-center px-4 py-2 rounded-lg bg-accent text-neutral font-semibold hover:opacity-90 transition"
+          >
+            IDEF0
+          </a>
         </div>
       </nav>
     </header>
 
-    <!-- Contenido principal -->
     <main class="flex-1 p-6 bg-neutral">
       <component :is="currentComponent" />
     </main>
@@ -38,6 +54,8 @@
     <NotificationContainer />
   </div>
 </template>
+
+
 
 <script setup>
 import { ref, computed } from 'vue'
