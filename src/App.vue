@@ -43,6 +43,18 @@
           >
             IDEF0
           </a>
+
+          <span class="nav-divider hidden sm:inline-block"></span>
+
+          <!-- ===== Botón IDEF0 al lado de “Inventario” ===== -->
+          <a
+            href="https://bpmnredes.netlify.app/"
+            target="_blank"
+            class="inline-flex items-center px-4 py-2 rounded-lg bg-accent text-neutral font-semibold hover:opacity-90 transition"
+          >
+            BPMN
+          </a>
+          
         </div>
       </nav>
     </header>
