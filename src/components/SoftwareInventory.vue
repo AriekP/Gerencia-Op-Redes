@@ -1,5 +1,6 @@
 <template>
   <div class="space-y-6">
+    <!-- Header + botón -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Inventario del Area del Redes</h1>
@@ -14,6 +15,7 @@
       </button>
     </div>
 
+    <!-- Filtros -->
     <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
       <div class="flex flex-col lg:flex-row lg:items-center gap-4">
         <div class="flex-1">
@@ -28,20 +30,14 @@
           </div>
         </div>
         <div class="flex flex-wrap gap-3">
-          <select
-            v-model="filters.status"
-            class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
+          <select v-model="filters.status" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option value="">Todos los estados</option>
             <option value="active">Activo</option>
             <option value="maintenance">En Mantenimiento</option>
             <option value="inactive">Inactivo</option>
             <option value="retired">Retirado</option>
           </select>
-          <select
-            v-model="filters.device_type"
-            class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
+          <select v-model="filters.device_type" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option value="">Todos los tipos</option>
             <option value="router">Router</option>
             <option value="switch">Switch</option>
@@ -52,79 +48,62 @@
             <option value="patch_panel">Patch Panel</option>
             <option value="server">Servidor</option>
           </select>
-          <select
-            v-model="filters.responsible_person"
-            class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
+          <select v-model="filters.responsible_person" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option value="">Todos los responsables</option>
             <option v-for="person in uniqueResponsiblePersons" :key="person" :value="person">{{ person }}</option>
           </select>
-          <select
-            v-model="filters.location"
-            class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
+          <select v-model="filters.location" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option value="">Todas las ubicaciones</option>
             <option v-for="loc in uniqueLocations" :key="loc" :value="loc">{{ loc }}</option>
           </select>
-          <button
-            @click="resetFilters"
-            class="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-          >
+          <button @click="resetFilters" class="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors">
             Limpiar filtros
           </button>
         </div>
       </div>
     </div>
 
+    <!-- Tabla + scroll superior sincronizado -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
+      <!-- Scroll top falso -->
+      <div
+        ref="topScroller"
+        class="h-4 overflow-x-auto overflow-y-hidden"
+        @scroll="onTopScroll"
+        style="scrollbar-width:auto;"
+      >
+        <div :style="{ width: contentWidth + 'px', height: '1px' }"></div>
+      </div>
+
+      <!-- Contenedor que scrollea realmente -->
+      <div ref="realScroller" class="overflow-x-auto" @scroll="onRealScroll">
+        <table class="min-w-[1400px] w-full border-separate divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Dispositivo
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Número de Serie
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tipo
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Fabricante
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Responsable
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Ubicación
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Estado
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Long. Total
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Long. Usada
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Fecha Compra
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Fin Garantía
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Última Revisión
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Observaciones
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dispositivo</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Número de Serie</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fabricante</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsable</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Long. Total</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Long. Usada</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Compra</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fin Garantía</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Última Revisión</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Observaciones</th>
+
+              <!-- HEADER sticky -->
+              <th
+                class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider
+                       sticky right-0 z-20 bg-white shadow-[inset_1px_0_0_#e5e7eb]"
+              >
                 Acciones
               </th>
             </tr>
           </thead>
+
           <tbody class="bg-white divide-y divide-gray-200">
             <tr v-for="device in filteredDevices" :key="device.id" class="hover:bg-gray-50">
               <td class="px-6 py-4 whitespace-nowrap">
@@ -158,24 +137,20 @@
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ formatDate(device.warranty_end_date) }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ formatDateTime(device.last_checked_at) }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 max-w-xs truncate">{{ device.observations }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <div class="flex items-center space-x-2">
-                  <button
-                    @click="viewDevice(device)"
-                    class="text-blue-600 hover:text-blue-900"
-                  >
+
+              <!-- CELDA sticky -->
+              <td
+                class="px-6 py-4 whitespace-nowrap text-sm font-medium
+                       sticky right-0 z-10 bg-white shadow-[inset_1px_0_0_#e5e7eb]"
+              >
+                <div class="flex items-center space-x-2 justify-end">
+                  <button @click="viewDevice(device)" class="text-blue-600 hover:text-blue-900" title="Ver">
                     <Eye class="w-4 h-4" />
                   </button>
-                  <button
-                    @click="editDevice(device)"
-                    class="text-gray-600 hover:text-gray-900"
-                  >
+                  <button @click="editDevice(device)" class="text-gray-600 hover:text-gray-900" title="Editar">
                     <Edit class="w-4 h-4" />
                   </button>
-                  <button
-                    @click="deleteDevice(device)"
-                    class="text-red-600 hover:text-red-900"
-                  >
+                  <button @click="deleteDevice(device)" class="text-red-600 hover:text-red-900" title="Eliminar">
                     <Trash2 class="w-4 h-4" />
                   </button>
                 </div>
@@ -186,6 +161,7 @@
       </div>
     </div>
 
+    <!-- Modal -->
     <div v-if="showAddModal || showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div class="bg-white rounded-lg max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">
@@ -286,7 +262,9 @@
 
           <div class="flex justify-end space-x-3 pt-4">
             <button type="button" @click="closeModal" class="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">Cancelar</button>
-            <button type="submit" class="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors">{{ showAddModal ? 'Agregar' : 'Guardar' }}</button>
+            <button type="submit" class="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors">
+              {{ showAddModal ? 'Agregar' : 'Guardar' }}
+            </button>
           </div>
         </form>
       </div>
@@ -295,7 +273,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { Plus, Search, Eye, Edit, Trash2, Package } from 'lucide-vue-next'
 import { useNotifications } from '../composables/useNotifications.js'
 
@@ -331,7 +309,39 @@ const currentDevice = ref({
 
 const networkDevices = ref([])
 
-// Helper para asegurar rutas relativas absolutas
+/* ------------ Scroll superior sincronizado ------------ */
+const topScroller = ref(null)
+const realScroller = ref(null)
+const contentWidth = ref(1400)
+let ro = null
+let syncing = false
+
+function measureContentWidth() {
+  const sc = realScroller.value
+  if (!sc) return
+  const inner = sc.querySelector('table')
+  const sw = inner ? inner.scrollWidth : sc.scrollWidth
+  contentWidth.value = sw
+}
+function onTopScroll() {
+  if (syncing) return
+  syncing = true
+  if (topScroller.value && realScroller.value) {
+    realScroller.value.scrollLeft = topScroller.value.scrollLeft
+  }
+  syncing = false
+}
+function onRealScroll() {
+  if (syncing) return
+  syncing = true
+  if (topScroller.value && realScroller.value) {
+    topScroller.value.scrollLeft = realScroller.value.scrollLeft
+  }
+  syncing = false
+}
+/* ------------------------------------------------------ */
+
+// Helper rutas
 const api = (p) => (p.startsWith('/') ? p : `/${p}`)
 
 const loadDevices = async () => {
@@ -366,6 +376,8 @@ const loadDevices = async () => {
         created_at: item.created_at
       }))
       networkDevices.value = rows
+      await nextTick()
+      measureContentWidth()
     } else {
       console.error('Error cargando dispositivos:', json?.error)
       showError('Error al cargar datos', 'No se pudieron cargar los datos del inventario de red')
@@ -376,12 +388,27 @@ const loadDevices = async () => {
   }
 }
 
-// Llamar al cargar el componente
-onMounted(() => {
-  loadDevices()
+onMounted(async () => {
+  await loadDevices()
+  await nextTick()
+  measureContentWidth()
+
+  const el = realScroller.value
+  if (el) {
+    ro = new ResizeObserver(() => measureContentWidth())
+    ro.observe(el)
+    const inner = el.querySelector('table')
+    if (inner) ro.observe(inner)
+  }
+  window.addEventListener('resize', measureContentWidth)
 })
 
-// Computed properties para filtros dinámicos
+onBeforeUnmount(() => {
+  if (ro) ro.disconnect()
+  window.removeEventListener('resize', measureContentWidth)
+})
+
+/* --------- Filtros y helpers --------- */
 const uniqueResponsiblePersons = computed(() => {
   const persons = networkDevices.value
     .map(item => item.responsible_person)
@@ -400,32 +427,20 @@ const filteredDevices = computed(() => {
   let filtered = networkDevices.value
 
   if (searchQuery.value) {
-    const searchTerm = searchQuery.value.toLowerCase()
+    const s = searchQuery.value.toLowerCase()
     filtered = filtered.filter(item =>
-      item.model.toLowerCase().includes(searchTerm) ||
-      item.manufacturer.toLowerCase().includes(searchTerm) ||
-      item.serial_number.toLowerCase().includes(searchTerm) ||
-      (item.responsible_person && item.responsible_person.toLowerCase().includes(searchTerm)) ||
-      (item.location && item.location.toLowerCase().includes(searchTerm)) ||
-      (item.observations && item.observations.toLowerCase().includes(searchTerm))
+      item.model?.toLowerCase().includes(s) ||
+      item.manufacturer?.toLowerCase().includes(s) ||
+      item.serial_number?.toLowerCase().includes(s) ||
+      item.responsible_person?.toLowerCase().includes(s) ||
+      item.location?.toLowerCase().includes(s) ||
+      item.observations?.toLowerCase().includes(s)
     )
   }
-
-  if (filters.value.status) {
-    filtered = filtered.filter(item => item.status === filters.value.status)
-  }
-
-  if (filters.value.device_type) {
-    filtered = filtered.filter(item => item.device_type === filters.value.device_type)
-  }
-
-  if (filters.value.responsible_person) {
-    filtered = filtered.filter(item => item.responsible_person === filters.value.responsible_person)
-  }
-
-  if (filters.value.location) {
-    filtered = filtered.filter(item => item.location === filters.value.location)
-  }
+  if (filters.value.status) filtered = filtered.filter(i => i.status === filters.value.status)
+  if (filters.value.device_type) filtered = filtered.filter(i => i.device_type === filters.value.device_type)
+  if (filters.value.responsible_person) filtered = filtered.filter(i => i.responsible_person === filters.value.responsible_person)
+  if (filters.value.location) filtered = filtered.filter(i => i.location === filters.value.location)
 
   return filtered
 })
@@ -439,55 +454,33 @@ const getStatusClass = (status) => {
   }
   return classes[status] || classes.active
 }
+const getStatusText = (status) => ({
+  active: 'Activo',
+  maintenance: 'Mantenimiento',
+  inactive: 'Inactivo',
+  retired: 'Retirado'
+}[status] || 'Activo')
 
-const getStatusText = (status) => {
-  const texts = {
-    active: 'Activo',
-    maintenance: 'Mantenimiento',
-    inactive: 'Inactivo',
-    retired: 'Retirado'
-  }
-  return texts[status] || 'Activo'
-}
+const getDeviceTypeText = (type) => ({
+  router: 'Router',
+  switch: 'Switch',
+  firewall: 'Firewall',
+  access_point: 'Access Point',
+  modem: 'Modem',
+  cable: 'Cable',
+  patch_panel: 'Patch Panel',
+  server: 'Servidor'
+}[type] || type)
 
-const getDeviceTypeText = (type) => {
-  const texts = {
-    router: 'Router',
-    switch: 'Switch',
-    firewall: 'Firewall',
-    access_point: 'Access Point',
-    modem: 'Modem',
-    cable: 'Cable',
-    patch_panel: 'Patch Panel',
-    server: 'Servidor'
-  }
-  return texts[type] || type
-}
-
-const formatDate = (dateString) => {
-  if (!dateString) return '-'
-  return new Date(dateString).toLocaleDateString('es-ES')
-}
-
-const formatDateTime = (dateTimeString) => {
-  if (!dateTimeString) return '-'
-  return new Date(dateTimeString).toLocaleString('es-ES')
-}
+const formatDate = (d) => d ? new Date(d).toLocaleDateString('es-ES') : '-'
+const formatDateTime = (d) => d ? new Date(d).toLocaleString('es-ES') : '-'
 
 const resetFilters = () => {
-  filters.value = {
-    status: '',
-    device_type: '',
-    responsible_person: '',
-    location: ''
-  }
+  filters.value = { status: '', device_type: '', responsible_person: '', location: '' }
   searchQuery.value = ''
 }
 
-const viewDevice = (item) => {
-  // Aquí podrías navegar a un detalle si lo necesitas
-  console.log('View device:', item)
-}
+const viewDevice = (item) => { console.log('View device:', item) }
 
 const editDevice = (item) => {
   currentDevice.value = {
@@ -502,7 +495,7 @@ const editDevice = (item) => {
     warranty_end_date: item.warranty_end_date,
     responsible_person: item.responsible_person,
     last_checked_by: item.last_checked_by,
-    last_checked_at: item.last_checked_at ? item.last_checked_at.replace(' ', 'T').substring(0, 16) : '',
+    last_checked_at: item.last_checked_at ? String(item.last_checked_at).replace(' ', 'T').substring(0, 16) : '',
     observations: item.observations,
     total_length_m: item.total_length_m,
     used_length_m: item.used_length_m
@@ -515,17 +508,12 @@ const deleteDevice = async (item) => {
   try {
     const res = await fetch(api(`/api/software/${item.id}`), { method: 'DELETE', cache: 'no-store' })
     const json = await res.json()
-
     if (!res.ok) {
       console.error('Error deleting', json)
-      if (res.status === 404) {
-        showError('Dispositivo no encontrado', 'El dispositivo que intentas eliminar ya no existe')
-      } else {
-        showError('Error al eliminar', json.error || 'No se pudo eliminar el dispositivo')
-      }
+      if (res.status === 404) showError('Dispositivo no encontrado', 'El dispositivo que intentas eliminar ya no existe')
+      else showError('Error al eliminar', json.error || 'No se pudo eliminar el dispositivo')
       return
     }
-
     showSuccess('Dispositivo eliminado', `"${item.model}" ha sido eliminado exitosamente`)
     await loadDevices()
   } catch (err) {
@@ -536,103 +524,60 @@ const deleteDevice = async (item) => {
 
 const saveDevice = async () => {
   try {
-    // Validaciones básicas
     if (!currentDevice.value.model || !currentDevice.value.manufacturer || !currentDevice.value.serial_number) {
       showWarning('Campos obligatorios', 'El modelo, fabricante y número de serie son obligatorios')
       return
     }
 
-    // Validar número de serie único (solo en modo crear)
     if (showAddModal.value) {
       const existingSerial = networkDevices.value.find(d =>
-        d.serial_number.toLowerCase() === currentDevice.value.serial_number.toLowerCase()
+        (d.serial_number || '').toLowerCase() === (currentDevice.value.serial_number || '').toLowerCase()
       )
       if (existingSerial) {
-        showError(
-          'Número de serie duplicado',
-          `Ya existe un dispositivo con el número de serie "${currentDevice.value.serial_number}". Los números de serie deben ser únicos.`
-        )
+        showError('Número de serie duplicado', `Ya existe un dispositivo con el número de serie "${currentDevice.value.serial_number}".`)
         return
       }
     }
 
     const headers = { 'Content-Type': 'application/json' }
+    const payload = {
+      device_type: currentDevice.value.device_type,
+      manufacturer: currentDevice.value.manufacturer,
+      model: currentDevice.value.model,
+      serial_number: currentDevice.value.serial_number,
+      location: currentDevice.value.location,
+      status: currentDevice.value.status,
+      purchase_date: currentDevice.value.purchase_date,
+      warranty_end_date: currentDevice.value.warranty_end_date,
+      responsible_person: currentDevice.value.responsible_person,
+      last_checked_by: currentDevice.value.last_checked_by,
+      last_checked_at: currentDevice.value.last_checked_at,
+      observations: currentDevice.value.observations,
+      total_length_m: currentDevice.value.total_length_m ? parseFloat(currentDevice.value.total_length_m) : null,
+      used_length_m: currentDevice.value.used_length_m ? parseFloat(currentDevice.value.used_length_m) : null
+    }
 
     if (showAddModal.value) {
-      const payload = {
-        device_type: currentDevice.value.device_type,
-        manufacturer: currentDevice.value.manufacturer,
-        model: currentDevice.value.model,
-        serial_number: currentDevice.value.serial_number,
-        location: currentDevice.value.location,
-        status: currentDevice.value.status,
-        purchase_date: currentDevice.value.purchase_date,
-        warranty_end_date: currentDevice.value.warranty_end_date,
-        responsible_person: currentDevice.value.responsible_person,
-        last_checked_by: currentDevice.value.last_checked_by,
-        last_checked_at: currentDevice.value.last_checked_at,
-        observations: currentDevice.value.observations,
-        total_length_m: currentDevice.value.total_length_m ? parseFloat(currentDevice.value.total_length_m) : null,
-        used_length_m: currentDevice.value.used_length_m ? parseFloat(currentDevice.value.used_length_m) : null
-      }
-
-      const res = await fetch(api('/api/software'), {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
-        cache: 'no-store'
-      })
+      const res = await fetch(api('/api/software'), { method: 'POST', headers, body: JSON.stringify(payload), cache: 'no-store' })
       const json = await res.json()
       if (!res.ok) {
         console.error('Error creating', json)
-        if (json.type === 'duplicate_serial_number') {
-          showError('Número de serie duplicado', json.error)
-        } else if (res.status === 400) {
-          showError('Datos incompletos', json.error || 'Por favor, completa todos los campos obligatorios')
-        } else {
-          showError('Error al crear dispositivo', json.error || 'Ocurrió un error inesperado')
-        }
+        if (json.type === 'duplicate_serial_number') showError('Número de serie duplicado', json.error)
+        else if (res.status === 400) showError('Datos incompletos', json.error || 'Completa los campos obligatorios')
+        else showError('Error al crear dispositivo', json.error || 'Ocurrió un error inesperado')
         return
       }
-
       showSuccess('Dispositivo creado', 'El dispositivo se ha creado exitosamente')
     } else {
-      const payload = {
-        device_type: currentDevice.value.device_type,
-        manufacturer: currentDevice.value.manufacturer,
-        model: currentDevice.value.model,
-        serial_number: currentDevice.value.serial_number,
-        location: currentDevice.value.location,
-        status: currentDevice.value.status,
-        purchase_date: currentDevice.value.purchase_date,
-        warranty_end_date: currentDevice.value.warranty_end_date,
-        responsible_person: currentDevice.value.responsible_person,
-        last_checked_by: currentDevice.value.last_checked_by,
-        last_checked_at: currentDevice.value.last_checked_at,
-        observations: currentDevice.value.observations,
-        total_length_m: currentDevice.value.total_length_m ? parseFloat(currentDevice.value.total_length_m) : null,
-        used_length_m: currentDevice.value.used_length_m ? parseFloat(currentDevice.value.used_length_m) : null
-      }
-
-      const res = await fetch(api(`/api/software/${currentDevice.value.id}`), {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(payload),
-        cache: 'no-store'
-      })
+      const res = await fetch(api(`/api/software/${currentDevice.value.id}`), { method: 'PUT', headers, body: JSON.stringify(payload), cache: 'no-store' })
       const json = await res.json()
       if (!res.ok) {
         console.error('Error updating', json)
-        if (json.type === 'duplicate_serial_number') {
-          showError('Número de serie duplicado', json.error)
-        } else if (res.status === 400) {
-          showError('Datos incompletos', json.error || 'Por favor, completa todos los campos obligatorios')
-        } else {
-          showError('Error al actualizar dispositivo', json.error || 'Ocurrió un error inesperado')
-        }
+        if (json.type === 'duplicate_serial_number') showError('Número de serie duplicado', json.error)
+        else if (res.status === 400) showError('Datos incompletos', json.error || 'Completa los campos obligatorios')
+        else showError('Error al actualizar dispositivo', json.error || 'Ocurrió un error inesperado')
         return
       }
-
       showSuccess('Dispositivo actualizado', 'Los datos se han actualizado exitosamente')
     }
 
