@@ -76,7 +76,10 @@
       </div>
 
       <!-- Contenedor que scrollea realmente -->
-      <div ref="realScroller" class="overflow-x-auto" @scroll="onRealScroll">
+      <!-- Added a vertical scroll container to enclose the table and allow vertical scrolling while
+           keeping the horizontal sync scroller on top. -->
+      <div class="max-h-[60vh] overflow-y-auto">
+        <div ref="realScroller" class="overflow-x-auto" @scroll="onRealScroll">
         <table class="min-w-[1400px] w-full border-separate divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
@@ -158,6 +161,7 @@
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
     </div>
 
