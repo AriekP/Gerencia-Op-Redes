@@ -77,7 +77,7 @@
 
       <!-- Contenedor que scrollea realmente -->
       <!-- Added a vertical scroll container to enclose the table and allow vertical scrolling while
-           keeping the horizontal sync scroller on top. -->
+           keeping the horizontal sync scroller on top. top -->
       <div class="max-h-[60vh] overflow-y-auto">
         <div ref="realScroller" class="overflow-x-auto" @scroll="onRealScroll">
         <table class="min-w-[1400px] w-full border-separate divide-y divide-gray-200">
@@ -201,7 +201,7 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Número de Serie *</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Número de serie *</label>
                 <input v-model="currentDevice.serial_number" type="text" required class="w-full px-2 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
               </div>
 
